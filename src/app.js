@@ -29,6 +29,7 @@ app.post('/api/notes', (req, res) => {
   res.status(200).json(note);
 });
 
+
 // Update note
 app.put('/api/notes/:id', (req, res) => {
   const note = db.updateNote(Number(req.params.id), req.body);
