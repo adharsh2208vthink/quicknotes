@@ -24,7 +24,7 @@ app.get('/api/notes/:id', (req, res) => {
 // Create note
 app.post('/api/notes', (req, res) => {
   const { title, body, category } = req.body;
-  if (!title) return res.status(400).json({ error: 'Title is required' });
+  if (!title) return res.status(400).json({ message: 'Title is required' });
   const note = db.createNote({ title, body, category });
   res.status(201).json(note);
 });
