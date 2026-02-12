@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "INPUT=$(cat); if echo \"$INPUT\" | jq -r '.tool_input.command' | grep -q 'git commit'; then cd \"$CLAUDE_PROJECT_DIR\" && npm test 2>&1; if [ $? -ne 0 ]; then echo 'BLOCKED: Tests are failing. Fix the failing tests before committing.' >&2; exit 2; fi; fi"
+            "command": "INPUT=$(cat); if echo \"$INPUT\" | jq -r '.tool_input.command' | grep -q 'git commit'; then cd \"$CLAUDE_PROJECT_DIR\" && npm test 2>&1; if [ $? -ne 0 ]; then echo 'BLOCKED: Tests are failing. Fix the failing tests before committing.' >&2; exit 2; else echo 'All tests passed. Proceeding with commit.'; fi; fi"
           }
         ]
       }

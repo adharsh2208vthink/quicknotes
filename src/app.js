@@ -9,7 +9,7 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 
 
 // List notes API
-app.get('/api/notes', (req, res) => {
+app.get('/api/note', (req, res) => {
   const notes = db.getAllNotes();
   res.json(notes);
 });
@@ -26,7 +26,7 @@ app.post('/api/notes', (req, res) => {
   const { title, body } = req.body;
   if (!title) return res.status(400).json({ error: 'Title is required' });
   const note = db.createNote({ title, body });
-  res.status(200).json(note);
+  res.status(201).json(note);
 });
 
 // Update note
