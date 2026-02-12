@@ -17,7 +17,7 @@ app.get('/api/notes', (req, res) => {
 // Get single note
 app.get('/api/notes/:id', (req, res) => {
   const note = db.getNoteById(Number(req.params.id));
-  if (!note) return res.status(404).json({ error: 'Note not found' });
+  if (!note) return res.status(404).json({ message: 'Note not found' });
   res.json(note);
 });
 
