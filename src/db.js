@@ -17,6 +17,10 @@ function getDb() {
         created_at DATETIME DEFAULT (datetime('now'))
       )
     `);
+    const columns = db.prepare("PRAGMA table_info(notes)").all();
+    if (!columns.some(c => c.name === 'category')) {
+      db.exec("ALTER TABLE notes ADD COLUMN category TEXT DEFAULT ''");
+    }
   }
   return db;
 }
@@ -29,20 +33,21 @@ function getNoteById(id) {
   return getDb().prepare('SELECT * FROM notes WHERE id = ?').get(id) || null;
 }
 
-function createNote({ title, body = '' }) {
-  const result = getDb().prepare('INSERT INTO notes (title, body) VALUES (?, ?)')
-    .run(title, body);
+function createNote({ title, body = '', category = '' }) {
+  const result = getDb().prepare('INSERT INTO notes (title, body, category) VALUES (?, ?, ?)')
+    .run(title, body, category);
   return getNoteById(result.lastInsertRowid);
 }
 
-function updateNote(id, { title, body }) {
+function updateNote(id, { title, body, category }) {
   const existing = getNoteById(id);
   if (!existing) return null;
 
-  getDb().prepare('UPDATE notes SET title = ?, body = ? WHERE id = ?')
+  getDb().prepare('UPDATE notes SET title = ?, body = ?, category = ? WHERE id = ?')
     .run(
       title ?? existing.title,
       body ?? existing.body,
+      category ?? existing.category,
       id
     );
   return getNoteById(id);
@@ -53,6 +58,10 @@ function deleteNote(id) {
   return result.changes > 0;
 }
 
+function getAllCategories() {
+  return getDb().prepare("SELECT DISTINCT category FROM notes WHERE category != '' ORDER BY category").pluck().all();
+}
+
 function closeDb() {
   if (db) {
     db.close();
@@ -60,4 +69,4 @@ function closeDb() {
   }
 }
 
-module.exports = { getAllNotes, getNoteById, createNote, updateNote, deleteNote, closeDb };
+module.exports = { getAllNotes, getNoteById, createNote, updateNote, deleteNote, getAllCategories, closeDb };

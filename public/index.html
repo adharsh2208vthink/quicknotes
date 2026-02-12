@@ -21,6 +21,9 @@
     .note-card .meta { display: flex; justify-content: space-between; align-items: center; }
     .actions button { margin-left: 8px; }
     .date { color: #999; font-size: 12px; }
+    .category-badge { display: inline-block; background: #4a90d9; color: white; font-size: 11px; padding: 2px 8px; border-radius: 12px; margin-left: 8px; vertical-align: middle; }
+    .filter-bar { margin-bottom: 16px; }
+    .filter-bar select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; background: white; }
   </style>
 </head>
 <body>
@@ -30,9 +33,19 @@
     <h2 id="form-title">New Note</h2>
     <input type="hidden" id="note-id">
     <input type="text" id="title" placeholder="Title">
+    <input type="text" id="category" placeholder="Category (optional)" list="category-list">
+    <datalist id="category-list"></datalist>
     <textarea id="body" placeholder="Body"></textarea>
     <button class="btn-primary" onclick="saveNote()">Save</button>
     <button class="btn-cancel" onclick="resetForm()" style="display:none" id="cancel-btn">Cancel</button>
+  </div>
+
+  <div class="filter-bar">
+    <label for="filter-category">Filter: </label>
+    <select id="filter-category" onchange="loadNotes()">
+      <option value="__all">All</option>
+      <option value="__uncategorized">Uncategorized</option>
+    </select>
   </div>
 
   <div id="notes-list"></div>
@@ -41,9 +54,30 @@
     const API = '/api/notes';
 
     async function loadNotes() {
-      const res = await fetch(API);
-      const notes = await res.json();
-      renderNotes(notes);
+      const [notesRes, catsRes] = await Promise.all([fetch(API), fetch('/api/categories')]);
+      const notes = await notesRes.json();
+      const categories = await catsRes.json();
+
+      // Populate datalist for autocomplete
+      const datalist = document.getElementById('category-list');
+      datalist.innerHTML = categories.map(c => `<option value="${esc(c)}">`).join('');
+
+      // Populate filter dropdown, preserving selection
+      const filter = document.getElementById('filter-category');
+      const selected = filter.value;
+      filter.innerHTML = '<option value="__all">All</option><option value="__uncategorized">Uncategorized</option>'
+        + categories.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+      filter.value = selected;
+      if (!filter.value) filter.value = '__all';
+
+      // Apply filter
+      const filtered = selected === '__uncategorized'
+        ? notes.filter(n => !n.category)
+        : selected && selected !== '__all'
+          ? notes.filter(n => n.category === selected)
+          : notes;
+
+      renderNotes(filtered);
     }
 
     function renderNotes(notes) {
@@ -54,7 +88,7 @@
       }
       list.innerHTML = notes.map(n => `
         <div class="note-card">
-          <h3>${esc(n.title)}</h3>
+          <h3>${esc(n.title)}${n.category ? `<span class="category-badge">${esc(n.category)}</span>` : ''}</h3>
           <p>${esc(n.body)}</p>
           <div class="meta">
             <div>
@@ -72,13 +106,14 @@
     async function saveNote() {
       const id = document.getElementById('note-id').value;
       const title = document.getElementById('title').value.trim();
+      const category = document.getElementById('category').value.trim();
       const body = document.getElementById('body').value.trim();
 
       if (!title) return alert('Title is required');
 
       const method = id ? 'PUT' : 'POST';
       const url = id ? `${API}/${id}` : API;
-      await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, body }) });
+      await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, body, category }) });
       resetForm();
       loadNotes();
     }
@@ -88,6 +123,7 @@
       const note = await res.json();
       document.getElementById('note-id').value = note.id;
       document.getElementById('title').value = note.title;
+      document.getElementById('category').value = note.category || '';
       document.getElementById('body').value = note.body;
       document.getElementById('form-title').textContent = 'Edit Note';
       document.getElementById('cancel-btn').style.display = 'inline';
@@ -102,6 +138,7 @@
     function resetForm() {
       document.getElementById('note-id').value = '';
       document.getElementById('title').value = '';
+      document.getElementById('category').value = '';
       document.getElementById('body').value = '';
       document.getElementById('form-title').textContent = 'New Note';
       document.getElementById('cancel-btn').style.display = 'none';
