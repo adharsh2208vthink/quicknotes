@@ -6,7 +6,9 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// List notes
+
+
+// List notes API
 app.get('/api/notes', (req, res) => {
   const notes = db.getAllNotes();
   res.json(notes);
