@@ -9,7 +9,7 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 
 
 // List notes API
-app.get('/api/not', (req, res) => {
+app.get('/api/note', (req, res) => {
   const notes = db.getAllNotes();
   res.json(notes);
 });
