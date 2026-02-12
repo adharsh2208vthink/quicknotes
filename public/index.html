@@ -15,14 +15,10 @@
     .btn-primary { background: #4a90d9; color: white; }
     .btn-danger { background: #e74c3c; color: white; font-size: 12px; padding: 6px 12px; }
     .btn-cancel { background: #95a5a6; color: white; }
-    .tag-filter { margin-bottom: 20px; }
-    .tag-filter select { padding: 8px; border-radius: 4px; border: 1px solid #ddd; }
     .note-card { background: white; padding: 16px; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .note-card h3 { margin-bottom: 8px; color: #333; }
     .note-card p { color: #666; margin-bottom: 8px; }
     .note-card .meta { display: flex; justify-content: space-between; align-items: center; }
-    .tag { display: inline-block; background: #e8f4fd; color: #4a90d9; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-right: 4px; }
-    .category { display: inline-block; background: #f0e6f6; color: #7b3fa0; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-right: 4px; }
     .actions button { margin-left: 8px; }
     .date { color: #999; font-size: 12px; }
   </style>
@@ -35,17 +31,8 @@
     <input type="hidden" id="note-id">
     <input type="text" id="title" placeholder="Title">
     <textarea id="body" placeholder="Body"></textarea>
-    <input type="text" id="tags" placeholder="Tags (comma-separated)">
-    <input type="text" id="categories" placeholder="Categories (comma-separated)">
     <button class="btn-primary" onclick="saveNote()">Save</button>
     <button class="btn-cancel" onclick="resetForm()" style="display:none" id="cancel-btn">Cancel</button>
-  </div>
-
-  <div class="tag-filter">
-    <label>Filter by tag: </label>
-    <select id="tag-select" onchange="loadNotes()">
-      <option value="">All</option>
-    </select>
   </div>
 
   <div id="notes-list"></div>
@@ -54,12 +41,9 @@
     const API = '/api/notes';
 
     async function loadNotes() {
-      const tag = document.getElementById('tag-select').value;
-      const url = tag ? `${API}?tag=${encodeURIComponent(tag)}` : API;
-      const res = await fetch(url);
+      const res = await fetch(API);
       const notes = await res.json();
       renderNotes(notes);
-      updateTagFilter(notes);
     }
 
     function renderNotes(notes) {
@@ -74,11 +58,9 @@
           <p>${esc(n.body)}</p>
           <div class="meta">
             <div>
-              ${(n.categories || []).map(c => `<span class="category">${esc(c)}</span>`).join('')}
-              ${(n.tags || []).map(t => `<span class="tag">${esc(t)}</span>`).join('')}
+              <span class="date">${new Date(n.created_at).toLocaleDateString()}</span>
             </div>
             <div class="actions">
-              <span class="date">${new Date(n.created_at).toLocaleDateString()}</span>
               <button class="btn-primary" onclick="editNote(${n.id})" style="font-size:12px;padding:6px 12px;">Edit</button>
               <button class="btn-danger" onclick="deleteNote(${n.id})">Delete</button>
             </div>
@@ -87,27 +69,16 @@
       `).join('');
     }
 
-    function updateTagFilter(notes) {
-      const select = document.getElementById('tag-select');
-      const current = select.value;
-      const allTags = [...new Set(notes.flatMap(n => n.tags || []))].sort();
-      const options = '<option value="">All</option>' + allTags.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
-      select.innerHTML = options;
-      select.value = current;
-    }
-
     async function saveNote() {
       const id = document.getElementById('note-id').value;
       const title = document.getElementById('title').value.trim();
       const body = document.getElementById('body').value.trim();
-      const tags = document.getElementById('tags').value.split(',').map(t => t.trim()).filter(Boolean);
-      const categories = document.getElementById('categories').value.split(',').map(c => c.trim()).filter(Boolean);
 
       if (!title) return alert('Title is required');
 
       const method = id ? 'PUT' : 'POST';
       const url = id ? `${API}/${id}` : API;
-      await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, body, tags, categories }) });
+      await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, body }) });
       resetForm();
       loadNotes();
     }
@@ -118,8 +89,6 @@
       document.getElementById('note-id').value = note.id;
       document.getElementById('title').value = note.title;
       document.getElementById('body').value = note.body;
-      document.getElementById('tags').value = (note.tags || []).join(', ');
-      document.getElementById('categories').value = (note.categories || []).join(', ');
       document.getElementById('form-title').textContent = 'Edit Note';
       document.getElementById('cancel-btn').style.display = 'inline';
     }
@@ -134,8 +103,6 @@
       document.getElementById('note-id').value = '';
       document.getElementById('title').value = '';
       document.getElementById('body').value = '';
-      document.getElementById('tags').value = '';
-      document.getElementById('categories').value = '';
       document.getElementById('form-title').textContent = 'New Note';
       document.getElementById('cancel-btn').style.display = 'none';
     }

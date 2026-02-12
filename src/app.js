@@ -6,10 +6,9 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// List notes (optionally filter by tag)
+// List notes
 app.get('/api/notes', (req, res) => {
-  const { tag } = req.query;
-  const notes = tag ? db.getNotesByTag(tag) : db.getAllNotes();
+  const notes = db.getAllNotes();
   res.json(notes);
 });
 
@@ -22,9 +21,9 @@ app.get('/api/notes/:id', (req, res) => {
 
 // Create note
 app.post('/api/notes', (req, res) => {
-  const { title, body, tags, categories } = req.body;
+  const { title, body } = req.body;
   if (!title) return res.status(400).json({ error: 'Title is required' });
-  const note = db.createNote({ title, body, tags, categories });
+  const note = db.createNote({ title, body });
   res.status(201).json(note);
 });
 

@@ -7,14 +7,12 @@ afterAll(() => closeDb());
 describe('Notes API', () => {
   let noteId;
 
-  test('POST /api/notes - creates a note with categories', async () => {
+  test('POST /api/notes - creates a note', async () => {
     const res = await request(app)
       .post('/api/notes')
-      .send({ title: 'Test Note', body: 'Hello world', tags: ['demo', 'test'], categories: ['work', 'urgent'] });
+      .send({ title: 'Test Note', body: 'Hello world' });
     expect(res.status).toBe(201);
     expect(res.body.title).toBe('Test Note');
-    expect(res.body.tags).toEqual(['demo', 'test']);
-    expect(res.body.categories).toEqual(['work', 'urgent']);
     noteId = res.body.id;
   });
 
@@ -31,19 +29,12 @@ describe('Notes API', () => {
     expect(res.body.title).toBe('Test Note');
   });
 
-  test('GET /api/notes?tag=demo - filters by tag', async () => {
-    const res = await request(app).get('/api/notes?tag=demo');
-    expect(res.status).toBe(200);
-    expect(res.body.every(n => n.tags.includes('demo'))).toBe(true);
-  });
-
   test('PUT /api/notes/:id - updates a note', async () => {
     const res = await request(app)
       .put(`/api/notes/${noteId}`)
-      .send({ title: 'Updated Note', categories: ['personal'] });
+      .send({ title: 'Updated Note' });
     expect(res.status).toBe(200);
     expect(res.body.title).toBe('Updated Note');
-    expect(res.body.categories).toEqual(['personal']);
   });
 
   test('DELETE /api/notes/:id - deletes a note', async () => {
@@ -54,14 +45,6 @@ describe('Notes API', () => {
   test('GET /api/notes/:id - returns 404 for missing note', async () => {
     const res = await request(app).get('/api/notes/99999');
     expect(res.status).toBe(404);
-  });
-
-  test('POST /api/notes - defaults categories to empty array', async () => {
-    const res = await request(app)
-      .post('/api/notes')
-      .send({ title: 'No Categories Note' });
-    expect(res.status).toBe(201);
-    expect(res.body.categories).toEqual([]);
   });
 
   test('POST /api/notes - returns 400 without title', async () => {

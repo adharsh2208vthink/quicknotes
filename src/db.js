@@ -14,51 +14,35 @@ function getDb() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
         body TEXT DEFAULT '',
-        tags TEXT DEFAULT '[]',
         created_at DATETIME DEFAULT (datetime('now'))
       )
     `);
-    try {
-      db.exec(`ALTER TABLE notes ADD COLUMN categories TEXT DEFAULT '[]'`);
-    } catch {
-      // Column already exists
-    }
   }
   return db;
 }
 
 function getAllNotes() {
-  return getDb().prepare('SELECT * FROM notes ORDER BY created_at DESC').all()
-    .map(parseNoteTags);
+  return getDb().prepare('SELECT * FROM notes ORDER BY created_at DESC').all();
 }
 
 function getNoteById(id) {
-  const note = getDb().prepare('SELECT * FROM notes WHERE id = ?').get(id);
-  return note ? parseNoteTags(note) : null;
+  return getDb().prepare('SELECT * FROM notes WHERE id = ?').get(id) || null;
 }
 
-function getNotesByTag(tag) {
-  return getDb().prepare("SELECT * FROM notes WHERE tags LIKE ? ORDER BY created_at DESC")
-    .all(`%"${tag}"%`)
-    .map(parseNoteTags);
-}
-
-function createNote({ title, body = '', tags = [], categories = [] }) {
-  const result = getDb().prepare('INSERT INTO notes (title, body, tags, categories) VALUES (?, ?, ?, ?)')
-    .run(title, body, JSON.stringify(tags), JSON.stringify(categories));
+function createNote({ title, body = '' }) {
+  const result = getDb().prepare('INSERT INTO notes (title, body) VALUES (?, ?)')
+    .run(title, body);
   return getNoteById(result.lastInsertRowid);
 }
 
-function updateNote(id, { title, body, tags, categories }) {
+function updateNote(id, { title, body }) {
   const existing = getNoteById(id);
   if (!existing) return null;
 
-  getDb().prepare('UPDATE notes SET title = ?, body = ?, tags = ?, categories = ? WHERE id = ?')
+  getDb().prepare('UPDATE notes SET title = ?, body = ? WHERE id = ?')
     .run(
       title ?? existing.title,
       body ?? existing.body,
-      JSON.stringify(tags ?? existing.tags),
-      JSON.stringify(categories ?? existing.categories),
       id
     );
   return getNoteById(id);
@@ -76,11 +60,4 @@ function closeDb() {
   }
 }
 
-function parseNoteTags(note) {
-  let tags, categories;
-  try { tags = JSON.parse(note.tags); } catch { tags = []; }
-  try { categories = JSON.parse(note.categories); } catch { categories = []; }
-  return { ...note, tags, categories };
-}
-
-module.exports = { getAllNotes, getNoteById, getNotesByTag, createNote, updateNote, deleteNote, closeDb };
+module.exports = { getAllNotes, getNoteById, createNote, updateNote, deleteNote, closeDb };
